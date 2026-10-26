@@ -72,7 +72,7 @@ int main() {
 			cout << "select the first cell(letter)" << endl;
 			cin >> cellC;
 			cout << "select the first cell(number)" << endl;
-			cin >> cellC;
+			cin >> cellI;
 			addMines(logicGrid, cellC,cellI);
 			firstMove = false;
 
