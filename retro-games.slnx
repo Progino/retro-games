@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="retro-games/retro-games.vcxproj" Id="b6de100a-facd-4930-b5df-7073f6c576e7" />
+</Solution>
