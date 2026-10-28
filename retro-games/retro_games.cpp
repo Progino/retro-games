@@ -3,6 +3,7 @@
 #include <cstdlib> 
 #include <ctime>
 #include <cctype>
+#include <limits>
 #define MINES 15
 #define ROWS 10
 #define COLUMNS 10
@@ -47,7 +48,7 @@ void addMines(int l[ROWS][COLUMNS],int cx,int cy){
 		int randomRow = rand() % 10;
 		int randomColumn = rand() % 10;
 
-		if ((randomRow != cx || randomColumn != cy)&&l[randomRow][randomColumn] != -1) {
+		if ((randomRow != cx && randomRow !=(cx-1) && randomRow != (cx+1)) ||( randomColumn != cy && randomColumn !=(cy-1) && randomColumn != (cy +1)) && l[randomRow][randomColumn] != -1) {
 			l[randomRow][randomColumn] = -1;
 			mines++;
 		}
@@ -149,13 +150,24 @@ int main() {
 	while (!gameOver) {
 		if (firstMove) {
 			printGrid(visualGrid, firstMove);
-			cout << "select the first cell(letter)" << endl;
-			cin >> cellC;
-			cellC = toupper(cellC);
-			if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
-				system("cls");
-				cout << "Insert a valid coordinate" << endl;
-				continue;
+			while (true) {
+				cout << "select the first cell(letter)" << endl;
+
+				string letterInput;
+				cin >> letterInput;
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+				if (letterInput.length() != 1) {
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				cellC = letterInput[0];
+				cellC = toupper(cellC);
+				if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				break;
 			}
 			for (int k = 0;k < ROWS;k++) {
 				if (cellC == coordinates[k]) {
@@ -166,7 +178,16 @@ int main() {
 			while (true) {
 				cout << "select the first cell(number)" << endl;
 				cin >> cellI;
-				if (cellI > 10) {
+				if (cin.fail()) {
+					cin.clear();
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				else {
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				}
+				if (cellI > 10 || cellI < 1) {
 					cout << "Insert a valid coordinate" << endl;
 					continue;
 				}
@@ -180,13 +201,25 @@ int main() {
 			printGrid(visualGrid, firstMove);
 		}
 		else {
-			cout << "select the cell(letter)" << endl;
-			cin >> cellC;
-			cellC = toupper(cellC);
-			if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
-				cout << "Insert a valid coordinate" << endl;
-				continue;
+			while (true) {
+				cout << "select the cell(letter)" << endl;
+				string letterInput;
+				cin >> letterInput;
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+				if (letterInput.length() != 1) {
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				cellC = letterInput[0];
+				cellC = toupper(cellC);
+				if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				break;
 			}
+			
 			for (int k = 0;k < ROWS;k++) {
 				if (cellC == coordinates[k]) {
 					cellCI = k;
@@ -196,7 +229,16 @@ int main() {
 			while (true) {
 				cout << "select the cell(number)" << endl;
 				cin >> cellI;
-				if (cellI > 10) {
+				if (cin.fail()) {
+					cin.clear();
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					cout << "Insert a valid coordinate" << endl;
+					continue;
+				}
+				else {
+					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				}
+				if (cellI > 10 || cellI < 1) {
 					cout << "Insert a valid coordinate" << endl;
 					continue;
 				}
