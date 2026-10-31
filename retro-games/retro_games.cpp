@@ -89,8 +89,17 @@ void addMines(int l[ROWS][COLUMNS],int cx,int cy){
 	}
 }
 
-void addFlag(char v[ROWS][COLUMNS], int cx, int cy) {
-	v[cx][cy] = 'F';
+bool addFlag(char v[ROWS][COLUMNS], int cx, int cy) {
+	bool occupied = false;
+	if (v[cx][cy] == '.') {
+		v[cx][cy] = 'F';
+		return occupied;
+	}
+	else {
+		cout << "Cell already discovered"<<endl;
+		occupied = true;
+		return occupied;
+	}
 }
 
 bool revealCell(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int cx, int cy) {
@@ -300,52 +309,55 @@ int main() {
 				}
 			}
 			else if (decision == 2) {
-				while (true) {
-					cout << "select the cell(letter)" << endl;
-					string letterInput;
-					cin >> letterInput;
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				 bool occupied = true;
+				while (occupied) {
+					while (true) {
+						cout << "select the cell(letter)" << endl;
+						string letterInput;
+						cin >> letterInput;
+						cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-					if (letterInput.length() != 1) {
-						cout << "Insert a valid coordinate" << endl;
-						continue;
-					}
-					cellC = letterInput[0];
-					cellC = toupper(cellC);
-					if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
-						cout << "Insert a valid coordinate" << endl;
-						continue;
-					}
-					break;
-				}
-
-				for (int k = 0;k < ROWS;k++) {
-					if (cellC == coordinates[k]) {
-						cellCI = k;
+						if (letterInput.length() != 1) {
+							cout << "Insert a valid coordinate" << endl;
+							continue;
+						}
+						cellC = letterInput[0];
+						cellC = toupper(cellC);
+						if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
+							cout << "Insert a valid coordinate" << endl;
+							continue;
+						}
 						break;
 					}
-				}
-				while (true) {
-					cout << "select the cell(number)" << endl;
-					cin >> cellI;
-					if (cin.fail()) {
-						cin.clear();
-						cin.ignore(numeric_limits<streamsize>::max(), '\n');
-						cout << "Insert a valid coordinate" << endl;
-						continue;
+
+					for (int k = 0;k < ROWS;k++) {
+						if (cellC == coordinates[k]) {
+							cellCI = k;
+							break;
+						}
 					}
-					else {
-						cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					while (true) {
+						cout << "select the cell(number)" << endl;
+						cin >> cellI;
+						if (cin.fail()) {
+							cin.clear();
+							cin.ignore(numeric_limits<streamsize>::max(), '\n');
+							cout << "Insert a valid coordinate" << endl;
+							continue;
+						}
+						else {
+							cin.ignore(numeric_limits<streamsize>::max(), '\n');
+						}
+						if (cellI > 10 || cellI < 1) {
+							cout << "Insert a valid coordinate" << endl;
+							continue;
+						}
+						cellI--;
+						break;
 					}
-					if (cellI > 10 || cellI < 1) {
-						cout << "Insert a valid coordinate" << endl;
-						continue;
-					}
-					cellI--;
-					break;
+					occupied = addFlag(visualGrid, cellCI, cellI);
 				}
 				system("cls");
-				addFlag(visualGrid,cellCI,cellI);
 				printGrid(visualGrid, firstMove);
 				won = winControl(logicGrid, visualGrid);
 
