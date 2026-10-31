@@ -4,11 +4,28 @@
 #include <ctime>
 #include <cctype>
 #include <limits>
+#include <chrono>
 #define MINES 15
+//#define EASYMINES 15
+//#define MEDIUMMINES 20
+//#define HARDMINES 30
 #define ROWS 10
 #define COLUMNS 10
 
 using namespace std;
+using namespace std::chrono;
+
+string formatTimeStr(int totalSeconds) {
+	int hours = totalSeconds / 3600;
+	int minutes = (totalSeconds % 3600) / 60;
+	int seconds = totalSeconds % 60;
+
+	string hh = (hours < 10 ? "0" : "") + to_string(hours);
+	string mm = (minutes < 10 ? "0" : "") + to_string(minutes);
+	string ss = (seconds < 10 ? "0" : "") + to_string(seconds);
+
+	return hh + ":" + mm + ":" + ss;
+}
 
 void printGrid(char v[ROWS][COLUMNS],bool fM) {
 	char coordinates[10]{ 'A','B','C','D','E','F','G','H','I','J' };
@@ -152,15 +169,19 @@ bool revealCell(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int cx, int cy) {
 bool winControl(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS]) {
 	bool won = false;
 	int flags = 0;
+	int safe = 0;
 	for (int j = 0; j < ROWS; j++) {
 		for (int i = 0; i < COLUMNS; i++) {
 			if (v[j][i] == 'F' && l[j][i]== -1) {
 				flags++;
 			}
+			if (v[j][i] != '.' && v[j][i] != 'F') {
+				safe++;
+			}
 		}
 	}
 	
-	if (flags == MINES) {
+	if (safe == 100 - MINES) {
 		won = true;
 	}
 	return won;
@@ -180,7 +201,15 @@ int main() {
 	int logicGrid[ROWS][COLUMNS];
 	char visualGrid[ROWS][COLUMNS];
 
+	steady_clock::time_point start_time;
+
 	while (!gameOver && !won) {
+		if (!firstMove) {
+			auto current_time = steady_clock::now();
+			auto elapsed_now = duration_cast<seconds>(current_time - start_time).count();
+			cout << "Current Time: " << formatTimeStr(elapsed_now) << endl;
+		}
+
 		if (firstMove) {
 			printGrid(visualGrid, firstMove);
 			while (true) {
@@ -229,6 +258,7 @@ int main() {
 			}
 			addMines(logicGrid, cellCI,cellI);
 			firstMove = false;
+			start_time = steady_clock::now();
 			system("cls");
 			gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI);
 			printGrid(visualGrid, firstMove);
@@ -363,6 +393,9 @@ int main() {
 
 				if (won) {
 					cout << "You Won" << endl;
+					auto end_time = steady_clock::now();
+					auto elapsed = duration_cast<seconds>(end_time - start_time).count();
+					cout << "Time: "<<formatTimeStr(elapsed)<<endl;
 					return 0;
 				}
 			}
