@@ -5,11 +5,99 @@
 #include <cctype>
 #include <limits>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 #define ROWS 10
 #define COLUMNS 10
 
 using namespace std;
 using namespace std::chrono;
+
+const string FILENAME = "minesweeper.txt";
+
+void saveGame(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int time) {
+	ofstream file(FILENAME);
+	if (!file.is_open()) {
+		cout << "Error: Could not save data to file!" << endl;
+		return;
+	}
+	file << time << endl;
+	for (int j = 0;j < ROWS;j++) {
+		for (int i = 0;i < COLUMNS;i++) {
+			file << l[j][i] << ",";
+		}
+	}
+	file  << endl;
+	for (int j = 0;j < ROWS;j++) {
+		for (int i = 0;i < COLUMNS;i++) {
+			file << (int)v[j][i] << ",";
+		}
+	}
+	file <<endl;
+	file.close();
+}
+
+int loadTime() {
+	ifstream file(FILENAME);
+	if (!file.is_open()) {
+		return 0;
+	}
+	string time;
+	if (getline(file, time)) {
+		file.close();
+		if (time.empty()) return 0;
+		return stoi(time);
+	}
+	file.close();
+	return 0;
+}
+
+void loadLogicGrid(int l[ROWS][COLUMNS]) {
+	ifstream file(FILENAME);
+	if (!file.is_open()) {
+		return;
+	}
+	
+	string line;
+	getline(file, line);
+
+	if (getline(file, line)) {
+		stringstream ss(line);
+		string cell;
+		for (int j = 0; j < ROWS; j++) {
+			for (int i = 0; i < COLUMNS; i++) {
+				if (getline(ss, cell, ',')) {
+					l[j][i] = stoi(cell);
+				}
+			}
+		}
+	}
+	file.close();
+}
+
+void loadVisualGrid(char v[ROWS][COLUMNS]) {
+	ifstream file(FILENAME);
+	if (!file.is_open()) {
+		return;
+	}
+
+	string line;
+	getline(file, line);
+	getline(file, line);
+
+	if (getline(file, line)) {
+		stringstream ss(line);
+		string cell;
+		for (int j = 0; j < ROWS; j++) {
+			for (int i = 0; i < COLUMNS; i++) {
+				if (getline(ss, cell, ',')) {
+					v[j][i] = (char)stoi(cell);
+				}
+			}
+		}
+	}
+	file.close();
+}
 
 string formatTimeStr(int totalSeconds) {
 	int hours = totalSeconds / 3600;
@@ -23,9 +111,10 @@ string formatTimeStr(int totalSeconds) {
 	return hh + ":" + mm + ":" + ss;
 }
 
-void printGrid(char v[ROWS][COLUMNS],bool fM) {
+void printGrid(char v[ROWS][COLUMNS],bool fM,int minesP) {
 	char coordinates[10]{ 'A','B','C','D','E','F','G','H','I','J' };
 
+	int minesLeft = minesP;
 	if (fM) {
 		for (int j = 0; j < ROWS; j++) {
 			for (int i = 0; i < COLUMNS; i++) {
@@ -34,18 +123,21 @@ void printGrid(char v[ROWS][COLUMNS],bool fM) {
 		}
 	}
 
-	cout << "     1  2  3  4  5  6  7  8  9  10" << endl;
+	cout << "     1  2  3  4  5  6  7  8  9  10" <<endl;
 	cout << "    ------------------------------" << endl;
 	for (int j = 0;j < ROWS;j++) {
 		cout << " " << coordinates[j] << " | ";
 		for (int i = 0;i < COLUMNS;i++) {
 			if (v[j][i] == 'F') {
 				cout << "\033[32m";
+				minesLeft--;
 			}
 			cout << v[j][i]<<"  "<<"\033[0m";
 		}
 		cout << endl;
 	}
+	cout << endl;
+	cout << "            MINES LEFT: " << minesLeft << "            "<<endl << endl;
 }
 
 void printFinalGrid(char v[ROWS][COLUMNS], int l[ROWS][COLUMNS]) {
@@ -223,15 +315,17 @@ int main() {
 	int easyMines = 5;
 	int mediumMines = 15;
 	int hardMines = 25;
-	int mines;
+	int mines = easyMines;
 	int difficulty;
 
+	int time = 0;
+
 	while (true) {
-		cout << "Select the difficulty: " << endl;
-		cout << "1. Easy(5 mines)" << endl;
-		cout << "2. Medium(15 mines)" << endl;
-		cout << "3. Hard(25 mines)" << endl;
-		cin >> difficulty;
+		int loadOption;
+		cout << endl << "      MINESWEEPER" << endl;
+		cout << "------------------------" << endl;
+		cout << "1. New game" << endl << "2. Load game" << endl << "3. Exit" << endl;
+		cin >>loadOption;
 		if (cin.fail()) {
 			cin.clear();
 			cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -241,105 +335,82 @@ int main() {
 		else {
 			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 		}
-		switch (difficulty) {
-		case 1:
-			mines = easyMines;
-			break;
-		case 2:
-			mines = mediumMines;
-			break;
-		case 3:
-			mines = hardMines;
-			break;
-		}
-		system("cls");
-		break;
-	}
-
-	while (!gameOver && !won) {
-		if (!firstMove) {
-			auto current_time = steady_clock::now();
-			auto elapsed_now = duration_cast<seconds>(current_time - start_time).count();
-			cout << "Current Time: " << formatTimeStr(elapsed_now) << endl;
-		}
-
-		if (firstMove) {
-			printGrid(visualGrid, firstMove);
-			while (true) {
-				cout << "select the first cell(letter)" << endl;
-
-				string letterInput;
-				cin >> letterInput;
-				cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-				if (letterInput.length() != 1) {
-					cout << "Insert a valid coordinate" << endl;
-					continue;
-				}
-				cellC = letterInput[0];
-				cellC = toupper(cellC);
-				if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
-					cout << "Insert a valid coordinate" << endl;
-					continue;
-				}
-				break;
-			}
-			for (int k = 0;k < ROWS;k++) {
-				if (cellC == coordinates[k]) {
-					cellCI = k;
-					break;
-				}
-			}
-			while (true) {
-				cout << "select the first cell(number)" << endl;
-				cin >> cellI;
-				if (cin.fail()) {
-					cin.clear();
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					cout << "Insert a valid coordinate" << endl;
-					continue;
-				}
-				else {
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-				}
-				if (cellI > 10 || cellI < 1) {
-					cout << "Insert a valid coordinate" << endl;
-					continue;
-				}
-				cellI--;
-				break;
-			}
-			addMines(logicGrid, cellCI,cellI,mines);
-			firstMove = false;
-			start_time = steady_clock::now();
+		if (loadOption == 1) {
 			system("cls");
-			gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI);
-			printGrid(visualGrid, firstMove);
 		}
-		else {
-			int decision;
-			while (true) {
-				cout <<endl<< "Add a flag or dig" << endl;
-				cout << "1. dig" << endl << "2. flag" << endl;
-				cin >> decision;
-				if (cin.fail()) {
-					cin.clear();
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					cout << "Insert a valid action" << endl;
-					continue;
+		if (loadOption == 2) {
+			system("cls");
+			loadLogicGrid(logicGrid);
+			loadVisualGrid(visualGrid);
+			time = loadTime();
+
+			mines = 0;
+			for (int j = 0;j < ROWS;j++) {
+				for (int i = 0;i < COLUMNS;i++) {
+					if (logicGrid[j][i] == -1) mines++;
 				}
-				else {
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-				}
-				if (decision != 1 && decision != 2) {
-					cout << "Insert a valid action" << endl;
-					continue;
-				}
-				break;
 			}
-			if (decision == 1) {
+			if (mines == 0) mines = easyMines;
+
+			
+			firstMove = false;
+			printGrid(visualGrid, firstMove, mines);
+			start_time = steady_clock::now();
+		}
+		if (loadOption == 3) {
+			return 0;
+
+		}
+		if (loadOption != 1 && loadOption != 2 && loadOption != 3) {
+			cout << "Insert a valid option" << endl;
+			continue;
+		}
+
+		while (firstMove) {
+			cout << "Select the difficulty: " << endl;
+			cout << "1. Easy(5 mines)" << endl;
+			cout << "2. Medium(15 mines)" << endl;
+			cout << "3. Hard(25 mines)" << endl;
+			cin >> difficulty;
+			if (cin.fail()) {
+				cin.clear();
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				cout << "Insert a valid option" << endl;
+				continue;
+			}
+			else {
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+			}
+			switch (difficulty) {
+			case 1:
+				mines = easyMines;
+				break;
+			case 2:
+				mines = mediumMines;
+				break;
+			case 3:
+				mines = hardMines;
+				break;
+			default:
+				cout << "Insert a valid option" << endl;
+				continue;
+			}
+			system("cls");
+			break;
+		}
+
+		while (!gameOver && !won) {
+			if (!firstMove) {
+				auto current_time = steady_clock::now();
+				int elapsed_now = duration_cast<seconds>(current_time - start_time).count() + time;
+				cout << "Current Time: " << formatTimeStr(elapsed_now) << endl;
+			}
+
+			if (firstMove) {
+				printGrid(visualGrid, firstMove, mines);
 				while (true) {
-					cout <<endl <<"select the cell(letter)" << endl;
+					cout << "select the first cell(letter)" << endl;
+
 					string letterInput;
 					cin >> letterInput;
 					cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -356,7 +427,6 @@ int main() {
 					}
 					break;
 				}
-
 				for (int k = 0;k < ROWS;k++) {
 					if (cellC == coordinates[k]) {
 						cellCI = k;
@@ -364,7 +434,7 @@ int main() {
 					}
 				}
 				while (true) {
-					cout << "select the cell(number)" << endl;
+					cout << "select the first cell(number)" << endl;
 					cin >> cellI;
 					if (cin.fail()) {
 						cin.clear();
@@ -382,31 +452,38 @@ int main() {
 					cellI--;
 					break;
 				}
+				addMines(logicGrid, cellCI, cellI, mines);
+				firstMove = false;
+				start_time = steady_clock::now();
 				system("cls");
 				gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI);
-				printGrid(visualGrid, firstMove);
-
-				if (gameOver) {
-					system("cls");
-					printFinalGrid(visualGrid, logicGrid);
-					cout << endl<<"Game over" << endl;
-					return 0;
-				}
-				won = winControl(logicGrid, visualGrid,mines);
-
-				if (won) {
-					cout <<endl<< "You win" << endl;
-					auto end_time = steady_clock::now();
-					auto elapsed = duration_cast<seconds>(end_time - start_time).count();
-					cout << "Time: " << formatTimeStr(elapsed) << endl;
-					return 0;
-				}
+				printGrid(visualGrid, firstMove, mines);
+				saveGame(logicGrid, visualGrid, time);
 			}
-			else if (decision == 2) {
-				 bool occupied = true;
-				while (occupied) {
+			else {
+				int decision;
+				while (true) {
+					cout << endl << "Add a flag or dig" << endl;
+					cout << "1. dig" << endl << "2. flag" << endl;
+					cin >> decision;
+					if (cin.fail()) {
+						cin.clear();
+						cin.ignore(numeric_limits<streamsize>::max(), '\n');
+						cout << "Insert a valid action" << endl;
+						continue;
+					}
+					else {
+						cin.ignore(numeric_limits<streamsize>::max(), '\n');
+					}
+					if (decision != 1 && decision != 2) {
+						cout << "Insert a valid action" << endl;
+						continue;
+					}
+					break;
+				}
+				if (decision == 1) {
 					while (true) {
-						cout << endl <<"select the cell(letter)" << endl;
+						cout << endl << "select the cell(letter)" << endl;
 						string letterInput;
 						cin >> letterInput;
 						cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -449,22 +526,93 @@ int main() {
 						cellI--;
 						break;
 					}
-					occupied = addFlag(visualGrid, cellCI, cellI);
-				}
-				system("cls");
-				printGrid(visualGrid, firstMove);
-				won = winControl(logicGrid, visualGrid,mines);
+					system("cls");
+					gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI);
+					printGrid(visualGrid, firstMove, mines);
 
-				if (won) {
-					cout <<endl<< "You Win" << endl;
-					auto end_time = steady_clock::now();
-					auto elapsed = duration_cast<seconds>(end_time - start_time).count();
-					cout << "Time: "<<formatTimeStr(elapsed)<<endl;
-					return 0;
+					if (gameOver) {
+						system("cls");
+						printFinalGrid(visualGrid, logicGrid);
+						cout << endl << "Game over" << endl;
+						return 0;
+					}
+					won = winControl(logicGrid, visualGrid, mines);
+
+					if (won) {
+						cout << endl << "You win" << endl;
+						auto end_time = steady_clock::now();
+						auto elapsed = duration_cast<seconds>(end_time - start_time).count();
+						cout << "Time: " << formatTimeStr(elapsed) << endl;
+						return 0;
+					}
+					int current_seconds = duration_cast<seconds>(steady_clock::now() - start_time).count() + time;
+					saveGame(logicGrid, visualGrid, current_seconds);
+				}
+				else if (decision == 2) {
+					bool occupied = true;
+					while (occupied) {
+						while (true) {
+							cout << endl << "select the cell(letter)" << endl;
+							string letterInput;
+							cin >> letterInput;
+							cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+							if (letterInput.length() != 1) {
+								cout << "Insert a valid coordinate" << endl;
+								continue;
+							}
+							cellC = letterInput[0];
+							cellC = toupper(cellC);
+							if (cellC != 'A' && cellC != 'B' && cellC != 'C' && cellC != 'D' && cellC != 'E' && cellC != 'F' && cellC != 'G' && cellC != 'H' && cellC != 'I' && cellC != 'J') {
+								cout << "Insert a valid coordinate" << endl;
+								continue;
+							}
+							break;
+						}
+
+						for (int k = 0;k < ROWS;k++) {
+							if (cellC == coordinates[k]) {
+								cellCI = k;
+								break;
+							}
+						}
+						while (true) {
+							cout << "select the cell(number)" << endl;
+							cin >> cellI;
+							if (cin.fail()) {
+								cin.clear();
+								cin.ignore(numeric_limits<streamsize>::max(), '\n');
+								cout << "Insert a valid coordinate" << endl;
+								continue;
+							}
+							else {
+								cin.ignore(numeric_limits<streamsize>::max(), '\n');
+							}
+							if (cellI > 10 || cellI < 1) {
+								cout << "Insert a valid coordinate" << endl;
+								continue;
+							}
+							cellI--;
+							break;
+						}
+						occupied = addFlag(visualGrid, cellCI, cellI);
+					}
+					system("cls");
+					printGrid(visualGrid, firstMove, mines);
+					won = winControl(logicGrid, visualGrid, mines);
+
+					if (won) {
+						cout << endl << "You Win" << endl;
+						auto end_time = steady_clock::now();
+						auto elapsed = duration_cast<seconds>(end_time - start_time).count();
+						cout << "Time: " << formatTimeStr(elapsed) << endl;
+						return 0;
+					}
+					int current_seconds = duration_cast<seconds>(steady_clock::now() - start_time).count() + time;
+					saveGame(logicGrid, visualGrid, current_seconds);
 				}
 			}
-		}
 
+		}
 	}
-	return 0;
 }
