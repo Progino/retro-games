@@ -174,7 +174,7 @@ void addMines(int l[ROWS][COLUMNS],int cx,int cy,int minesP){
 		int randomRow = rand() % 10;
 		int randomColumn = rand() % 10;
 
-		if ((randomRow != cx && randomRow !=(cx-1) && randomRow != (cx+1)) ||( randomColumn != cy && randomColumn !=(cy-1) && randomColumn != (cy +1)) && l[randomRow][randomColumn] != -1) {
+		if (!(randomRow >= cx -1 && randomRow <= cx + 1 && randomColumn >= cy - 1 && randomColumn <= cy + 1)){
 			l[randomRow][randomColumn] = -1;
 			mines++;
 		}
@@ -195,19 +195,19 @@ void addMines(int l[ROWS][COLUMNS],int cx,int cy,int minesP){
 			if (j > 0 && l[j-1][i] == -1) {
 				number++;
 			}
-			if (i<9 && j>0 && l[j-1][i + 1] == -1) {
+			if (i < (COLUMNS -1) && j>0 && l[j - 1][i + 1] == -1) {
 				number++;
 			}
-			if (i < 9 && l[j][i + 1] == -1) {
+			if (i < (COLUMNS -1) && l[j][i + 1] == -1) {
 				number++;
 			}
-			if (i < 9 && j<9 && l[j+1][i + 1] == -1) {
+			if (i < (COLUMNS - 1) && j<(ROWS-1) && l[j+1][i + 1] == -1) {
 				number++;
 			}
-			if (j < 9 && l[j+1][i] == -1) {
+			if (j < (ROWS - 1) && l[j+1][i] == -1) {
 				number++;
 			}
-			if (i > 0 && j < 9 && l[j+1][i - 1] == -1) {
+			if (i > 0 && j < (ROWS - 1) && l[j+1][i - 1] == -1) {
 				number++;
 			}
 			l[j][i] = number;
@@ -228,14 +228,28 @@ bool addFlag(char v[ROWS][COLUMNS], int cx, int cy) {
 	}
 }
 
-bool revealCell(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int cx, int cy) {
+bool revealCell(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int cx, int cy, bool manualClick = false) {
 	bool gameOver = false;
 	
-	if (v[cx][cy] != '.') {
-		if (v[cx][cy] != 'F') {
+
+	if (v[cx][cy] == 'F') {
+		return false;
+	}
+	
+	if (v[cx][cy] >= '1' && v[cx][cy] <= '8') {
+		if (manualClick) {
+			goto checkNear;
+		}
+		else {
 			return false;
 		}
+		
 	}
+
+	if (v[cx][cy] == '0') {
+		return false;
+	}
+
 
 	if (l[cx][cy] == -1) {
 		gameOver = true;
@@ -267,6 +281,63 @@ bool revealCell(int l[ROWS][COLUMNS], char v[ROWS][COLUMNS], int cx, int cy) {
 		}
 		if (cx < 9 && cy > 0) {
 			revealCell(l, v, cx + 1, cy - 1);
+		}
+	}
+	else if (l[cx][cy] < 8 && l[cx][cy] > 0) {
+		v[cx][cy] = l[cx][cy] + '0';
+
+		checkNear:
+
+		int flags = 0;
+		if (cy > 0 && v[cx][cy - 1] == 'F') {
+			flags++;
+		}
+		if (cy > 0 && cx > 0 && v[cx - 1][cy - 1] == 'F') {
+			flags++;
+		}
+		if (cx > 0 && v[cx - 1][cy] == 'F') {
+			flags++;
+		}
+		if (cx > 0 && cy < 9 && v[cx - 1][cy + 1] == 'F') {
+			flags++;
+		}
+		if (cy < 9 && v[cx][cy + 1] == 'F') {
+			flags++;
+		}
+		if (cx < 9 && cy < 9 && v[cx + 1][cy + 1] == 'F') {
+			flags++;
+		}
+		if (cx < 9 && v[cx + 1][cy] == 'F') {
+			flags++;
+		}
+		if (cx < 9 && cy > 0 && v[cx + 1][cy - 1] == 'F') {
+			flags++;
+		}
+		if (flags == l[cx][cy]) {
+			if (cy > 0 && revealCell(l, v, cx, cy - 1)) {
+				gameOver = true;
+			}
+			if (cy > 0 && cx > 0 && revealCell(l, v, cx - 1, cy - 1)) {
+				gameOver = true;
+			}
+			if (cx > 0 && revealCell(l, v, cx - 1, cy)) {
+				gameOver = true;
+			}
+			if (cx > 0 && cy < 9 && revealCell(l, v, cx - 1, cy + 1)) {
+				gameOver = true;
+			}
+			if (cy < 9 && revealCell(l, v, cx, cy + 1)) {
+				gameOver = true;
+			}
+			if (cx < 9 && cy < 9 && revealCell(l, v, cx + 1, cy + 1)) {
+				gameOver = true;
+			}
+			if (cx < 9 && revealCell(l, v, cx + 1, cy)) {
+				gameOver = true;
+			}
+			if (cx < 9 && cy > 0 && revealCell(l, v, cx + 1, cy - 1)) {
+				gameOver = true;
+			}
 		}
 	}
 	else {
@@ -340,10 +411,14 @@ int main() {
 		}
 		if (loadOption == 2) {
 			system("cls");
+			time = loadTime();
+			if (time == 0) {
+				cout << "No game saved" << endl;
+				continue;
+			}
 			loadLogicGrid(logicGrid);
 			loadVisualGrid(visualGrid);
-			time = loadTime();
-
+			
 			mines = 0;
 			for (int j = 0;j < ROWS;j++) {
 				for (int i = 0;i < COLUMNS;i++) {
@@ -527,13 +602,14 @@ int main() {
 						break;
 					}
 					system("cls");
-					gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI);
+					gameOver = revealCell(logicGrid, visualGrid, cellCI, cellI,true);
 					printGrid(visualGrid, firstMove, mines);
 
 					if (gameOver) {
 						system("cls");
 						printFinalGrid(visualGrid, logicGrid);
 						cout << endl << "Game over" << endl;
+						saveGame(logicGrid, visualGrid, 0);
 						return 0;
 					}
 					won = winControl(logicGrid, visualGrid, mines);
@@ -543,6 +619,7 @@ int main() {
 						auto end_time = steady_clock::now();
 						auto elapsed = duration_cast<seconds>(end_time - start_time).count();
 						cout << "Time: " << formatTimeStr(elapsed) << endl;
+						saveGame(logicGrid, visualGrid, 0);
 						return 0;
 					}
 					int current_seconds = duration_cast<seconds>(steady_clock::now() - start_time).count() + time;
@@ -606,6 +683,7 @@ int main() {
 						auto end_time = steady_clock::now();
 						auto elapsed = duration_cast<seconds>(end_time - start_time).count();
 						cout << "Time: " << formatTimeStr(elapsed) << endl;
+						saveGame(logicGrid, visualGrid, 0);
 						return 0;
 					}
 					int current_seconds = duration_cast<seconds>(steady_clock::now() - start_time).count() + time;
