@@ -7,5 +7,6 @@ For the controlls (how you choose the cell) I used a coordinates system where yo
 
 To play it, just download the .exe file and open it in your computer.
 
+time making this: about 9 hours\
 Coding language: c++\
 Made using: Visual Studio 2026
