@@ -111,6 +111,50 @@ string formatTimeStr(int totalSeconds) {
 	return hh + ":" + mm + ":" + ss;
 }
 
+void printColoredCell(char c) {
+	switch (c) {
+	case '.': 
+		cout << "\033[90m.\033[0m  "; 
+		break;
+	case '0': 
+		cout << "0  ";
+		break;
+	case '1': 
+		cout << "\033[34m1\033[0m  "; 
+		break;
+	case '2': 
+		cout << "\033[32m2\033[0m  "; 
+		break;
+	case '3': 
+		cout << "\033[31m3\033[0m  ";
+		break;
+	case '4': 
+		cout << "\033[35m4\033[0m  "; 
+		break;
+	case '5': 
+		cout << "\033[35m5\033[0m  "; 
+		break;
+	case '6': 
+		cout << "\033[36m6\033[0m  "; 
+		break;
+	case '7': 
+		cout << "\033[94m7\033[0m  ";
+		break;
+	case '8': 
+		cout << "\033[95m8\033[0m  "; 
+		break;
+	case 'F': 
+		cout << "\033[91mF\033[0m  "; 
+		break;
+	case 'X': 
+		cout << "\033[101\033[mX\033[0m  ";
+		break;
+	default: 
+		cout << c << "  "; 
+		break;
+	}
+}
+
 void printGrid(char v[ROWS][COLUMNS],bool fM,int minesP) {
 	char coordinates[10]{ 'A','B','C','D','E','F','G','H','I','J' };
 
@@ -128,11 +172,7 @@ void printGrid(char v[ROWS][COLUMNS],bool fM,int minesP) {
 	for (int j = 0;j < ROWS;j++) {
 		cout << " " << coordinates[j] << " | ";
 		for (int i = 0;i < COLUMNS;i++) {
-			if (v[j][i] == 'F') {
-				cout << "\033[32m";
-				minesLeft--;
-			}
-			cout << v[j][i]<<"  "<<"\033[0m";
+			printColoredCell(v[j][i]);
 		}
 		cout << endl;
 	}
@@ -149,10 +189,9 @@ void printFinalGrid(char v[ROWS][COLUMNS], int l[ROWS][COLUMNS]) {
 		cout << " " << coordinates[j] << " |";
 		for (int i = 0;i < COLUMNS;i++) {
 			if (l[j][i] == -1) {
-				cout << "\033[31m";
 				v[j][i] = 'X';
 			}
-			cout << v[j][i] << "  "<< "\033[0m";
+			printColoredCell(v[j][i]);
 		}
 		cout << endl;
 	}
